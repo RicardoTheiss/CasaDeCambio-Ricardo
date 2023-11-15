@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cotação de Moedas</title>
+</head>
+
+<body>
+  <h1>Cotação de Moedas</h1>
+
+  <input type="radio" id="idComprar" name="nmEscolha">
+  <label for="idComprar">Comprar</label>
+  <br>
+  <input type="radio" id="idVender" name="nmEscolha">
+  <label for="idVender">Vender</label>
+
+  <br>
+
+  <label for="idMoedaOrigem">Moeda de Origem:</label>
+  <select id="idMoedaOrigem">
+    <!-- Opções serão preenchidas dinamicamente via JavaScript -->
+  </select>
+
+  <label for="idMoedaDestino">Moeda de Destino:</label>
+  <select id="idMoedaDestino">
+    <!-- Opções serão preenchidas dinamicamente via JavaScript -->
+  </select>
+
+  <label for="valor">Valor a Converter:</label>
+  <input type="number" id="idValor" placeholder="Digite o valor" />
+
+  <button id="idCalcular">Calcular</button>
+
+  <div id="idResultado">
+    <!-- Aqui será exibido o resultado da cotação -->
+  </div>
+
+  <script>
+    const endpoint = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/Moedas?$top=100&$format=json&$select=simbolo,nomeFormatado,tipoMoeda"
+    const dataAtual = new Date().toISOString().slice(0, 10)
+
+    // Função para preencher as opções dos campos de seleção com base na API
+    async function preencherCamposSelecao() {
+      const response = await fetch(endpoint)
+      const data = await response.json()
+      const moedaOrigem = document.getElementById("idMoedaOrigem")
+      const moedaDestino = document.getElementById("idMoedaDestino")
+
+      data.value.forEach((moeda) => {
+        moedaOrigem.innerHTML += `<option value="${moeda.simbolo}">${moeda.nomeFormatado}</option>`
+        moedaDestino.innerHTML += `<option value="${moeda.simbolo}">${moeda.nomeFormatado}</option>`
+      })
+    }
+
+    // Chame a função para preencher os campos de seleção
+    preencherCamposSelecao()
+
+    var calcular = document.getElementById("idCalcular")
+    calcular.onclick = async function() {
+      var moedaOrigem = document.getElementById("idMoedaOrigem").value
+      var moedaDestino = document.getElementById("idMoedaDestino").value
+      var valor = parseFloat(document.getElementById("idValor").value)
+      var comprar = document.getElementById("idComprar").checked
+      var vender = document.getElementById("idVender").checked
+
+      // Realize o cálculo com base nas seleções do usuário e no valor digitado
+      const resultado = await realizarCalculo(moedaOrigem, moedaDestino, comprar, vender, valor)
+
+      // Exiba o resultado no elemento "idResultado"
+      document.getElementById("idResultado").textContent = `Resultado: ${resultado} ${moedaOrigem.simbolo}`
+    }
+    async function realizarCalculo(moedaOrigem, moedaDestino, comprar, vender, valor) {
+      const cotacoesCompraEndpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaOrigem.simbolo}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
+      const cotacoesVendaEndpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaDestino.simbolo}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
+
+      const responseCompra = await fetch(cotacoesCompraEndpoint)
+      const dataCompra = await responseCompra.json()
+      const cotacaoCompra = dataCompra.value[0].cotacaoCompra
+
+      const responseVenda = await fetch(cotacoesVendaEndpoint)
+      const dataVenda = await responseVenda.json()
+      const cotacaoVenda = dataVenda.value[0].cotacaoVenda
+
+      // Realizar o cálculo com base na escolha do usuário
+      if (comprar){
+        resultado = (responseCompra * valor) / cotacoesVendaEndpoint
+        return resultado
+      } else {
+        resultado = (responseCompra * valor) / cotacoesVendaEndpoint
+      }
+    } 
+
+  </script>
+</body>
+
+</html>
