@@ -5,41 +5,61 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cotação de Moedas</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
 </head>
 
-<body>
+<body class="container mt-4">
   <h1>Cotação de Moedas</h1>
 
-  <input type="radio" id="idComprar" name="nmEscolha">
-  <label for="idComprar">Comprar</label>
-  <br>
-  <input type="radio" id="idVender" name="nmEscolha">
-  <label for="idVender">Vender</label>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="radio" id="idComprar" name="nmEscolha">
+    <label class="form-check-label" for="idComprar">Comprar</label>
+  </div>
 
-  <br>
+  <div class="form-check form-check-inline">
+    <input class="form-check-input" type="radio" id="idVender" name="nmEscolha">
+    <label class="form-check-label" for="idVender">Vender</label>
+  </div>
 
-  <label for="idMoedaOrigem">Moeda de Origem:</label>
-  <select id="idMoedaOrigem">
-    <!-- Opções serão preenchidas dinamicamente via JavaScript -->
-  </select>
+  <div class="form-group">
+    <label for="idMoedaOrigem">Moeda de Origem:</label>
+    <select id="idMoedaOrigem" class="form-control">
+      <option value="BRL">Real</option>
+      <!-- Opções serão preenchidas dinamicamente via JavaScript -->
+    </select>
+  </div>
 
-  <label for="idMoedaDestino">Moeda de Destino:</label>
-  <select id="idMoedaDestino">
-    <!-- Opções serão preenchidas dinamicamente via JavaScript -->
-  </select>
+  <div class="form-group">
+    <label for="idMoedaDestino">Moeda de Destino:</label>
+    <select id="idMoedaDestino" class="form-control">
+      <option value="BRL">Real</option>
+      <!-- Opções serão preenchidas dinamicamente via JavaScript -->
+    </select>
+  </div>
 
-  <label for="valor">Valor a Converter:</label>
-  <input type="number" id="idValor" placeholder="Digite o valor" />
+  <div class="form-group">
+    <label for="valor">Valor a Converter:</label>
+    <input type="number" id="idValor" class="form-control" placeholder="Digite o valor" />
+  </div>
 
-  <button id="idCalcular">Calcular</button>
+  <button id="idCalcular" class="btn btn-primary">Calcular</button>
 
-  <div id="idResultado">
+  <div id="idResultado" class="mt-3">
     <!-- Aqui será exibido o resultado da cotação -->
   </div>
 
   <script>
     const endpoint = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/Moedas?$top=100&$format=json&$select=simbolo,nomeFormatado,tipoMoeda"
-    const dataAtual = new Date().toISOString().slice(0, 10)
+    function obterDataFormatada() {
+      const data = new Date()
+      const ano = data.getFullYear()
+      const mes = String(data.getMonth() + 1).padStart(2, '0')
+      const dia = String(data.getDate()).padStart(2, '0')
+
+      return `${mes}-${dia}-${ano}`
+    }
+
+    let dataAtual = obterDataFormatada()
 
     // Função para preencher as opções dos campos de seleção com base na API
     async function preencherCamposSelecao() {
@@ -58,7 +78,7 @@
     preencherCamposSelecao()
 
     var calcular = document.getElementById("idCalcular")
-    calcular.onclick = async function() {
+    calcular.onclick = async function () {
       var moedaOrigem = document.getElementById("idMoedaOrigem").value
       var moedaDestino = document.getElementById("idMoedaDestino").value
       var valor = parseFloat(document.getElementById("idValor").value)
@@ -69,28 +89,92 @@
       const resultado = await realizarCalculo(moedaOrigem, moedaDestino, comprar, vender, valor)
 
       // Exiba o resultado no elemento "idResultado"
-      document.getElementById("idResultado").textContent = `Resultado: ${resultado} ${moedaOrigem.simbolo}`
+      document.getElementById("idResultado").textContent = `Resultado: ${resultado}`
     }
+
     async function realizarCalculo(moedaOrigem, moedaDestino, comprar, vender, valor) {
-      const cotacoesCompraEndpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaOrigem.simbolo}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
-      const cotacoesVendaEndpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaDestino.simbolo}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
-
-      const responseCompra = await fetch(cotacoesCompraEndpoint)
-      const dataCompra = await responseCompra.json()
-      const cotacaoCompra = dataCompra.value[0].cotacaoCompra
-
-      const responseVenda = await fetch(cotacoesVendaEndpoint)
-      const dataVenda = await responseVenda.json()
-      const cotacaoVenda = dataVenda.value[0].cotacaoVenda
+      // Declare a variável resultado antes de usá-la
+      let resultado
 
       // Realizar o cálculo com base na escolha do usuário
-      if (comprar){
-        resultado = (responseCompra * valor) / cotacoesVendaEndpoint
-        return resultado
+      if (vender) {
+        let cotacoesCompraEndpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaOrigem}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
+        let cotacoesCompra2Endpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaDestino}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
+
+        if (moedaOrigem == "BRL") {
+          let responseCompra2 = await fetch(cotacoesCompra2Endpoint)
+          let dataCompra2 = await responseCompra2.json()
+          let cotacaoCompra2 = dataCompra2.value[0].cotacaoCompra
+
+          resultado = cotacaoCompra2 * valor
+          resultado += " BRL"
+        } else if (moedaDestino == "BRL") {
+          let responseCompra2 = await fetch(cotacoesCompra2Endpoint)
+          let dataCompra2 = await responseCompra2.json()
+          let cotacaoCompra2 = dataCompra2.value[0].cotacaoCompra
+
+          resultado = cotacaoCompra2 / valor
+          resultado += ` ${moedaOrigem}`
+        } else {
+          let responseCompra = await fetch(cotacoesCompraEndpoint)
+          let dataCompra = await responseCompra.json()
+          let cotacaoCompra = dataCompra.value[0].cotacaoCompra
+
+          let responseCompra2 = await fetch(cotacoesCompra2Endpoint)
+          let dataCompra2 = await responseCompra2.json()
+          let cotacaoCompra2 = dataCompra2.value[0].cotacaoCompra
+
+          resultado = (cotacaoCompra * valor) / cotacaoCompra2
+          resultado += ` ${moedaDestino}`
+        }
+
+      } else if (comprar) {
+        let cotacoesCompraEndpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaOrigem}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
+        let cotacoesCompra2Endpoint = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaDia(moeda=@moeda,dataCotacao=@dataCotacao)?@moeda='${moedaDestino}'&@dataCotacao='${dataAtual}'&$top=1&$format=json&$select=cotacaoCompra,cotacaoVenda`
+
+        if (moedaOrigem == "BRL") {
+          let responseCompra2 = await fetch(cotacoesCompra2Endpoint)
+          let dataCompra2 = await responseCompra2.json()
+          let cotacaoCompra2 = dataCompra2.value[0].cotacaoVenda
+
+          resultado = cotacaoCompra2 * valor
+          resultado += " BRL"
+        } else if (moedaDestino == "BRL") {
+          let responseCompra1 = await fetch(cotacoesCompraEndpoint)
+          let dataCompra1 = await responseCompra1.json()
+          let cotacaoCompra1 = dataCompra1.value[0].cotacaoVenda
+
+          resultado = valor / cotacaoCompra1
+          resultado += ` ${moedaOrigem}`
+        } else {
+          let responseVenda = await fetch(cotacoesCompraEndpoint)
+          let dataVenda = await responseVenda.json()
+          let cotacaoVenda = dataVenda.value[0].cotacaoVenda
+
+          let responseVenda2 = await fetch(cotacoesCompra2Endpoint)
+          let dataVenda2 = await responseVenda2.json()
+          let cotacaoVenda2 = dataVenda2.value[0].cotacaoVenda
+
+          resultado = (cotacaoVenda * valor) / cotacaoVenda2
+          resultado += ` ${moedaDestino}`
+        }
       } else {
-        resultado = (responseCompra * valor) / cotacoesVendaEndpoint
+        alert("Selecione compra ou venda")
+        resultado = "Não é possível realizar o cálculo"
       }
-    } 
+
+      return resultado
+
+      if (resultado == 0) {
+        while (parseFloat(resultado) === 0) {
+          // Diminuir a data em um dia
+          const novaData = new Date(dataAtual)
+          novaData.setDate(novaData.getDate() - 1)
+          dataAtual = obterDataFormatada(novaData)
+          const resultado = await realizarCalculo(moedaOrigem, moedaDestino, comprar, vender, valor)
+        }
+      }
+    }
 
   </script>
 </body>
